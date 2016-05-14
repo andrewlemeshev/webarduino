@@ -7,7 +7,7 @@ exports.home = function (req, res) {
 
 exports.about = function (req, res) {
   res.render('pages/about', {
-    title: 'About page',
-    message: 'This is the "about" action of "pages" controller'
+    title: 'About WebArduino',
+    message: 'Simple to understand web arduino maker. It has been writen on JavaScript, using JSGL for the representing and NodeJS as server technology.'
   })
 }
