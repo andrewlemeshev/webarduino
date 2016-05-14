@@ -1,3 +1,6 @@
 views
 app-cov
 coverage.html
+bin
+node_modules
+routes
