@@ -5,6 +5,7 @@
   <title><%= title %></title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
   <style>
     body {
       padding-top: 60px;
@@ -24,6 +25,17 @@
     }
     .logInText:hover {
       background-color: #00AA00 !important;
+    }
+    .menu {
+      width: 10%;
+      height: 90%;
+      overflow: auto;
+      float: left;
+    }
+    .panel {
+      width: 1000px;
+      height: 1000px;
+      float: left;
     }
   </style>
   <!--<link href="bootstrap/css/bootstrap-responsive.css" rel="stylesheet"> -->
@@ -55,7 +67,8 @@
     <%- body -%>
   </div>
 
-  <script src="http://code.jquery.com/jquery-latest.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="http://code.jquery.com/jquery-latest.js"></script>
+  <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="../../public/javascripts/jsgl.min.js">
 </body>
 </html>
