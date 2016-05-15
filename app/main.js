@@ -16,11 +16,12 @@ app.use(function (req, res, next) {
 })
 
 // mount routes
-app.get('/', function (req, res) {
-  //res.send('Hello, Express!')
-  res.redirect('home')
-})
-app.get('/home', pages.home)
+app.get('/', pages.home)
 app.get('/about', pages.about)
+//app.get('/404', pages.err404)
+
+app.use(function(req, res, next) {
+  res.redirect('404');
+});
 
 module.exports = app

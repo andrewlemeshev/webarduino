@@ -10,7 +10,20 @@
       padding-top: 60px;
     }
     .navbar-nav {
-      margin: 0px 35%
+      margin: 0px 0%;
+      margin-left: 40%;
+    }
+    .logIn {
+      float:right;
+      border: 1px;
+      border-color: #333;
+    }
+    .logInText {
+      background-color: #008500 !important;
+      color: white !important;
+    }
+    .logInText:hover {
+      background-color: #00AA00 !important;
     }
   </style>
   <!--<link href="bootstrap/css/bootstrap-responsive.css" rel="stylesheet"> -->
@@ -28,8 +41,11 @@
       <a class="navbar-brand" href="/">WebArduino</a>
         <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
           <ul class="nav navbar-nav">
-            <li class="active"><a href="/home">Home <span class="sr-only">(current)</span></a></li>
-            <li><a href="/about">About</a></li>
+            <li class="<%= route == '/home' && 'active' || '' %>"><a href="/home">Home</a></li>
+            <li class="<%= route == '/about' && 'active' || '' %>"><a href="/about">About</a></li>
+          </ul>
+          <ul class="nav navbar-nav logIn">
+            <li><a class="logInText" href="#">Log in</a></li>
           </ul>
       </div>
     </div>
