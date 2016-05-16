@@ -41,23 +41,36 @@ $( document ).ready(function() {
       //console.log("k: "+k+" v: "+v);
     //});
     console.log(responceJson);
-    var arduinoElement;
-    var append = '<a href="#" class="list-group-item disabled">Arduino</a>';
+    var firstMeet = false;
+    var arduinoElement = [];
+    var appendArduino = '<a href="#" class="list-group-item disabled">Arduino</a>';
+    var appendComponent = '<a href="#" class="list-group-item disabled">Components</a>'
     var arr = Object.keys(responceJson).map(function(k, v) {  return responceJson[k] });//console.log(k);console.log(v);
 
     for (var i = 0; i < arr.length; i++) {
-      var pins = {};// = new Pins[arr[i].pinCount];
-      for (var j = 0; j < arr[i].pinCount; j++) {
-        pins[j].pinX = arr[i].pinX[j]; ///////////////////wqdfqcvlewpvqrhohowvbpoiqernvpoqrnovpoqeunpvuonenqhi
-        pins[j].pinY = arr[i].pinY[j];
-      }
-      var h=0;
-      Object.keys(arr[i].pinNamesAndTypes).map(function(k, v) {pins[h].pinName = k; pins[h].pinType = v; h++;});
-      arduinoElement[i] = new arduinoElement(arr[i].name, arr[i].type, arr[i].pinCount, pins, arr[i].statement);
-      append = append + '<a href="#" class="list-group-item">' + arr[i].name + ' ' + arr[i].type + '</a><img src="images/' + arr[i].statement.default + '">';
+      var pin = new Pins();// = new Pins[arr[i].pinCount];
+      var pins = [];
+      var j=0;
+      Object.keys(arr[i].pinNamesAndTypes).map(function(k, v) {
+        pin.pinName = k;
+        pin.pinType = v;
+        pin.pinX = arr[i].pinXs[j];
+        pin.pinY = arr[i].pinYs[j];
+        pins.push(pin);
+        j++;
+      });
+      //for (var j = 0; j < arr[i].pinCount; j++) {
+
+      //}
+      arduinoElement.push(new ArduinoElement(arr[i].name, arr[i].type, arr[i].pinCount, pins, arr[i].statement));
+      var menuName = arr[i].name==arr[i].type?(arr[i].name):(arr[i].name+' '+arr[i].type);
+      if (arr[i].name == 'Arduino') appendArduino = appendArduino + '<a href="#" class="list-group-item" data="'+i+'">'
+            + arr[i].name + ' ' + arr[i].type + '<img src="images/' + arr[i].statement.default + '"></a>';
+      else appendComponent = appendComponent + '<a href="#" class="list-group-item" data="'+i+'">'
+            + menuName + '<p><img src="images/' + arr[i].statement.default + '"></p></a>';
     }
 
-    $(".menu").html(append);
+    $(".menu").html(appendArduino+appendComponent);
     //var height = window.screen.availHeight * 0.9;
     //var width = window.screen.availWidth * 0.9;
     var style = {
@@ -67,9 +80,24 @@ $( document ).ready(function() {
     $("#panel").css(style);
     myPanel = new jsgl.Panel(document.getElementById("panel"));
 
-    for (var i = 0; i < arduinoElement.length; i++) {
-      arduinoElement[i]
-    }
+    $("a.list-group-item").filter(function(index) {
+      return $(this).attr("class") != "disabled";
+    }).on("click", function() {
+      console.log(this);
+      var myImage = myPanel.createImage();
+      myImage.setUrl("images/" + arduinoElement[$(this).attr("data")].statement.default);
+      myImage.setHorizontalAnchor(jsgl.HorizontalAnchor.CENTER);
+      myImage.setVerticalAnchor(jsgl.VerticalAnchor.MIDDLE);
+      //myImage.setSizeWH(200, 200);
+      //myImage.setLocationXY(style.width/2+myImage.getWidth()/2, style.height/2+myImage.getHeight()/2);
+      console.log(myImage.getWidth());
+      //if (arduinoElement[$(this).attr("data")].name != 'Arduino') myImage.setSizeWH()
+      myPanel.addElement(myImage);
+      myImage.setLocationXY(style.width/2, style.height/2);
+      console.log(myImage.getWidth());
+      arduinoElement[$(this).attr("data")].imageOnPanel = myImage;
+      
+    })
     //var element = {
 
     //};

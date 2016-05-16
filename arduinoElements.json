@@ -1,7 +1,7 @@
 {
   "arduinoUno": {
-    "name": "arduino",
-    "type": "uno",
+    "name": "Arduino",
+    "type": "Uno",
     "pinCount": 31,
     "pinXs": [
       95,
@@ -107,8 +107,8 @@
     }
   },
   "led": {
-    "name": "led",
-    "type": "red",
+    "name": "Led",
+    "type": "Red",
     "pinCount": 2,
     "pinXs": [
       38,
@@ -123,14 +123,14 @@
       "2": "pin"
     },
     "statement": {
-      "default": "led.png",
+      "default": "led1.png",
       "lowBrightness": "ledLowBrightness.png",
       "highBrightness": "ledHighBrightness.png"
     }
   },
   "button": {
-    "name": "button",
-    "type": "button",
+    "name": "Button",
+    "type": "Button",
     "pinCount": 4,
     "pinXs":[
       7,
