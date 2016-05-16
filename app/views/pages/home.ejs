@@ -10,21 +10,26 @@
 <div id="panel" class="panel"></div>
 <script type="text/javascript">
 $( document ).ready(function() {
-  function Pins(pinName, pinType, pinX, pinY, pinOut, pinIn) {
-    this.pinName;
-    this.pinType;
-    this.pinX;
-    this.pinY;
-    this.pinOut;
-    this.pinIn;
+  var sourcePin, sourceElement;
+  var arduinoElement = [];
+
+  function Pins(pinName, pinType, pinX, pinY) {
+    this.pinName = pinName;
+    this.pinType = pinType;
+    this.pinX = pinX;
+    this.pinY = pinY;
+    this.pinOut = null;
+    this.pinIn = null;
   }
 
-  function ArduinoElement(name, type, pinCount, pins, statement) {
+  function ArduinoElement(name, type, pinCount, pins, statement, statementXs, statementYs) {
     this.name = name;
     this.type = type;
     this.pinCount = pinCount;
     this.pins = pins;
     this.statement = statement;
+    this.statementXs = statementXs;
+    this.statementYs = statementYs;
     this.that = this;
   }
 
@@ -42,27 +47,38 @@ $( document ).ready(function() {
     //});
     console.log(responceJson);
     var firstMeet = false;
-    var arduinoElement = [];
     var appendArduino = '<a href="#" class="list-group-item disabled">Arduino</a>';
     var appendComponent = '<a href="#" class="list-group-item disabled">Components</a>'
     var arr = Object.keys(responceJson).map(function(k, v) {  return responceJson[k] });//console.log(k);console.log(v);
 
     for (var i = 0; i < arr.length; i++) {
-      var pin = new Pins();// = new Pins[arr[i].pinCount];
+      // = new Pins[arr[i].pinCount];
       var pins = [];
       var j=0;
-      Object.keys(arr[i].pinNamesAndTypes).map(function(k, v) {
-        pin.pinName = k;
-        pin.pinType = v;
-        pin.pinX = arr[i].pinXs[j];
-        pin.pinY = arr[i].pinYs[j];
-        pins.push(pin);
-        j++;
+      var prev;
+      Object.keys(arr[i].pinNamesAndTypes).map(function(current, v) {
+        if (arr[i].name == 'Arduino' && arr[i].type == 'Uno' && prev == '5V') {
+          var pin = new Pins('GND', 'ground', arr[i].pinXs[j], arr[i].pinYs[j]);
+          pins.push(pin);
+          j++;
+          var pin = new Pins('GND', 'ground', arr[i].pinXs[j], arr[i].pinYs[j]);
+          pins.push(pin);
+          j++;
+        } //else {
+          var pin = new Pins(current, arr[i].pinNamesAndTypes[current], arr[i].pinXs[j], arr[i].pinYs[j]);
+          console.log(current+": "+arr[i].pinNamesAndTypes[current]);
+          pins.push(pin);
+          j++;
+        //}
+        prev = current;
       });
       //for (var j = 0; j < arr[i].pinCount; j++) {
-
+      console.log("Pins: ");
+      console.log(pins);
       //}
-      arduinoElement.push(new ArduinoElement(arr[i].name, arr[i].type, arr[i].pinCount, pins, arr[i].statement));
+      arduinoElement.push(new ArduinoElement(arr[i].name, arr[i].type, arr[i].pinCount, pins, arr[i].statement, arr[i].statementXs, arr[i].statementYs));
+      console.log("Element: ");
+      console.log(arduinoElement);
       var menuName = arr[i].name==arr[i].type?(arr[i].name):(arr[i].name+' '+arr[i].type);
       if (arr[i].name == 'Arduino') appendArduino = appendArduino + '<a href="#" class="list-group-item" data="'+i+'">'
             + arr[i].name + ' ' + arr[i].type + '<img src="images/' + arr[i].statement.default + '"></a>';
@@ -80,24 +96,113 @@ $( document ).ready(function() {
     $("#panel").css(style);
     myPanel = new jsgl.Panel(document.getElementById("panel"));
 
+    var z=2;
     $("a.list-group-item").filter(function(index) {
       return $(this).attr("class") != "disabled";
     }).on("click", function() {
       console.log(this);
       var myImage = myPanel.createImage();
-      myImage.setUrl("images/" + arduinoElement[$(this).attr("data")].statement.default);
-      myImage.setHorizontalAnchor(jsgl.HorizontalAnchor.CENTER);
-      myImage.setVerticalAnchor(jsgl.VerticalAnchor.MIDDLE);
+      var index = $(this).attr("data");
+      myImage.setUrl("images/" + arduinoElement[index].statement.default);
+      //myImage.setHorizontalAnchor(jsgl.HorizontalAnchor.CENTER);
+      //myImage.setVerticalAnchor(jsgl.VerticalAnchor.MIDDLE);
       //myImage.setSizeWH(200, 200);
       //myImage.setLocationXY(style.width/2+myImage.getWidth()/2, style.height/2+myImage.getHeight()/2);
-      console.log(myImage.getWidth());
+      //console.log(myImage.getWidth());
       //if (arduinoElement[$(this).attr("data")].name != 'Arduino') myImage.setSizeWH()
       myPanel.addElement(myImage);
-      myImage.setLocationXY(style.width/2, style.height/2);
-      console.log(myImage.getWidth());
-      arduinoElement[$(this).attr("data")].imageOnPanel = myImage;
-      
-    })
+      myImage.setLocationXY(style.width/2-arduinoElement[index].statementXs[0]/2, style.height/2-arduinoElement[index].statementYs[0]/2);
+      myImage.setSizeWH(arduinoElement[index].statementXs[0], arduinoElement[index].statementYs[0]);
+      if (arduinoElement[index].name == 'Arduino') myImage.setZIndex(0);
+      else myImage.setZIndex(z);
+      z++;
+      //console.log(myImage.getWidth());
+      arduinoElement[index].imageOnPanel = myImage;
+      arduinoElement[index].imageOnPanel.addMouseMoveListener(elementInteraction);
+      arduinoElement[index].imageOnPanel.addMouseDownListener(elementInteraction);
+      arduinoElement[index].imageOnPanel.addClickListener(elementInteraction);
+      for (var i = 0; i < arduinoElement[index].pinCount; i++) {
+        var pinReck = myPanel.createRectangle();
+        //pinReck.setHorizontalAnchor(jsgl.HorizontalAnchor.CENTER);
+        //pinReck.setVerticalAnchor(jsgl.VerticalAnchor.MIDDLE);
+        pinReck.setLocationXY(arduinoElement[index].imageOnPanel.getX()+arduinoElement[index].pins[i].pinX,
+                              arduinoElement[index].imageOnPanel.getY()+arduinoElement[index].pins[i].pinY);
+        pinReck.setSizeWH(10, 10);
+        if (arduinoElement[index].name == 'Arduino') pinReck.setZIndex(1);
+        else pinReck.setZIndex(z);
+        pinReck.getFill().setColor("rgb(255,0,0)");
+        pinReck.getFill().setOpacity(0.0);
+        pinReck.getStroke().setOpacity(0.0);
+        arduinoElement[index].pins[i].reck = pinReck;
+        arduinoElement[index].pins[i].reck.addMouseOverListener(pinInteraction);
+        arduinoElement[index].pins[i].reck.addMouseOutListener(pinInteraction);
+        arduinoElement[index].pins[i].reck.addMouseDownListener(pinInteraction);
+        arduinoElement[index].pins[i].reck.addClickListener(pinInteraction);
+        myPanel.addElement(arduinoElement[index].pins[i].reck);
+      }
+      z++;
+    });
+
+    function pinInteraction(eventArgs) {
+      var choosen = false;
+      switch(eventArgs.getEventType()) {
+        case jsgl.MouseEvent.CLICK:
+          sourcePin = eventArgs.getSourceElement();
+          sourcePin.getFill().setOpacity(1.0);
+          choosen = true;
+          break;
+        case jsgl.MouseEvent.DOWN:
+          //sourcePin = eventArgs.getSourceElement();
+          //sourcePin.getFill().setOpacity(1.0);
+          //choosen = true;
+          break;
+        case jsgl.MouseEvent.UP:
+          //text = "mouse up";
+          break;
+        case jsgl.MouseEvent.MOVE:
+          //text = "mouse move";
+          eventArgs.getSourceElement().getFill().setOpacity(1.0);
+          break;
+        case jsgl.MouseEvent.OVER:
+          eventArgs.getSourceElement().getFill().setOpacity(1.0);
+          break;
+        case jsgl.MouseEvent.OUT:
+          if (!choosen) eventArgs.getSourceElement().getFill().setOpacity(0.0);
+          break;
+      }
+    }
+
+    function elementInteraction(eventArgs) {
+      switch(eventArgs.getEventType()) {
+        case jsgl.MouseEvent.CLICK:
+          sourceElement = null;
+          break;
+        case jsgl.MouseEvent.DOWN:
+          sourceElement = eventArgs.getSourceElement();
+          for (var i = 0; i < arduinoElement.length; i++) {
+            if (sourceElement == arduinoElement[i].imageOnPanel) sourceElement.parent = arduinoElement[i];
+          }
+          choosen = true;
+          break;
+        case jsgl.MouseEvent.UP:
+          //text = "mouse up";
+          break;
+        case jsgl.MouseEvent.MOVE:
+          //text = "mouse move";
+          if (sourceElement != null) {
+            sourceElement.setLocationXY(eventArgs.getX()-sourceElement.getWidth()/2, eventArgs.getY()-sourceElement.getHeight()/2);
+            for (var i = 0; i < sourceElement.parent.pinCount; i++) {
+              sourceElement.parent.pins[i].reck.setLocationXY(sourceElement.getX()+sourceElement.parent.pins[i].pinX,
+                                                              sourceElement.getY()+sourceElement.parent.pins[i].pinY);
+            }
+          }
+          break;
+        case jsgl.MouseEvent.OVER:
+          break;
+        case jsgl.MouseEvent.OUT:
+          break;
+      }
+    }
     //var element = {
 
     //};

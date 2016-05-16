@@ -104,45 +104,59 @@
     },
     "statement": {
       "default": "arduino_leds.png"
-    }
+    },
+    "statementXs": [
+      300
+    ],
+    "statementYs": [
+      214
+    ]
   },
   "led": {
     "name": "Led",
     "type": "Red",
     "pinCount": 2,
     "pinXs": [
-      38,
-      72
+      14,
+      30
     ],
     "pinYs": [
-      297,
-      346
+      98,
+      115
     ],
     "pinNamesAndTypes": {
       "1": "pin",
       "2": "pin"
     },
     "statement": {
-      "default": "led1.png",
+      "default": "led2.png",
       "lowBrightness": "ledLowBrightness.png",
       "highBrightness": "ledHighBrightness.png"
-    }
+    },
+    "statementXs": [
+      60,
+      60
+    ],
+    "statementYs": [
+      125,
+      150
+    ]
   },
   "button": {
     "name": "Button",
     "type": "Button",
     "pinCount": 4,
     "pinXs":[
-      7,
-      7,
-      88,
-      88
+      0,
+      0,
+      79,
+      79
     ],
     "pinYs": [
-      13,
-      67,
-      13,
-      67
+      0,
+      56,
+      0,
+      56
     ],
     "pinNamesAndTypes": {
       "1": "pin",
@@ -153,6 +167,14 @@
     "statement": {
       "default": "button.png",
       "active": "buttonActive.png"
-    }
+    },
+    "statementXs": [
+      89,
+      89
+    ],
+    "statementYs": [
+      66,
+      67
+    ]
   }
 }
