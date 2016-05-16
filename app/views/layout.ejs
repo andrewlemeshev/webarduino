@@ -5,7 +5,8 @@
   <title><%= title %></title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+  <script type="text/javascript" src="javascripts/jsgl.min.js"></script>
+  <script src="https://code.jquery.com/jquery-2.2.3.min.js" integrity="sha256-a23g1Nt4dtEYOj7bR+vTu7+T8VP13humZFBJNIYoEJo=" crossorigin="anonymous"></script>
   <style>
     body {
       padding-top: 60px;
@@ -33,9 +34,10 @@
       float: left;
     }
     .panel {
-      width: 1000px;
-      height: 1000px;
-      float: left;
+      margin-left: 1%;
+      margin-right: 4%;
+      float: right;
+      border-color: #000000;
     }
   </style>
   <!--<link href="bootstrap/css/bootstrap-responsive.css" rel="stylesheet"> -->
@@ -62,13 +64,10 @@
       </div>
     </div>
   </div>
-
   <div>
     <%- body -%>
   </div>
 
-  <script type="text/javascript" src="http://code.jquery.com/jquery-latest.js"></script>
   <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
-  <script type="text/javascript" src="../../public/javascripts/jsgl.min.js">
 </body>
 </html>

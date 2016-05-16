@@ -1,0 +1,158 @@
+{
+  "arduinoUno": {
+    "name": "arduino",
+    "type": "uno",
+    "pinCount": 31,
+    "pinXs": [
+      95,
+      105,
+      116,
+      126,
+      136,
+      146,
+      156,
+      166,
+      177,
+      187,
+      203,
+      213,
+      224,
+      234,
+      244,
+      254,
+      265,
+      275,
+      142,
+      152,
+      162,
+      172,
+      183,
+      193,
+      203,
+      224,
+      234,
+      244,
+      255,
+      265,
+      275
+    ],
+    "pinYs": [
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      199,
+      199,
+      199,
+      199,
+      199,
+      199,
+      199,
+      199,
+      199,
+      199,
+      199,
+      199,
+      199
+    ],
+    "pinNamesAndTypes": {
+      "SCL":   "pin",
+      "SDA":   "pin",
+      "AREF":  "pin",
+      "GND":   "ground",
+      "P13":    "digital",
+      "P12":    "digital",
+      "P11":    "pwm",
+      "P10":    "pwm",
+      "P9":     "pwm",
+      "P8":     "digital",
+      "P7":     "digital",
+      "P6":     "pwm",
+      "P5":     "pwm",
+      "P4":     "digital",
+      "P3":     "pwm",
+      "P2":     "digital",
+      "P1":     "tx",
+      "P0":     "rx",
+      "IOREF": "pin",
+      "RESET": "pin",
+      "3.3V":  "power",
+      "5V":    "power",
+      "GND":   "ground",
+      "GND":   "ground",
+      "VIN":   "power",
+      "A0":    "analog",
+      "A1":    "analog",
+      "A2":    "analog",
+      "A3":    "analog",
+      "A4":    "analog",
+      "A5":    "analog"
+    },
+    "statement": {
+      "default": "arduino_leds.png"
+    }
+  },
+  "led": {
+    "name": "led",
+    "type": "red",
+    "pinCount": 2,
+    "pinXs": [
+      38,
+      72
+    ],
+    "pinYs": [
+      297,
+      346
+    ],
+    "pinNamesAndTypes": {
+      "1": "pin",
+      "2": "pin"
+    },
+    "statement": {
+      "default": "led.png",
+      "lowBrightness": "ledLowBrightness.png",
+      "highBrightness": "ledHighBrightness.png"
+    }
+  },
+  "button": {
+    "name": "button",
+    "type": "button",
+    "pinCount": 4,
+    "pinXs":[
+      7,
+      7,
+      88,
+      88
+    ],
+    "pinYs": [
+      13,
+      67,
+      13,
+      67
+    ],
+    "pinNamesAndTypes": {
+      "1": "pin",
+      "2": "pin",
+      "3": "pin",
+      "4": "pin"
+    },
+    "statement": {
+      "default": "button.png",
+      "active": "buttonActive.png"
+    }
+  }
+}
