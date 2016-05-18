@@ -10,8 +10,9 @@
 <div id="panel" class="panel"></div>
 <script type="text/javascript">
 $( document ).ready(function() {
-  var sourcePin, sourceElement;
+  var sourcePin = null, sourceElement = null, sourcePinFromPanel = null, currentLine = null;
   var arduinoElement = [];
+  var wires = [];
 
   function Pins(pinName, pinType, pinX, pinY) {
     this.pinName = pinName;
@@ -20,6 +21,18 @@ $( document ).ready(function() {
     this.pinY = pinY;
     this.pinOut = null;
     this.pinIn = null;
+    this.lineOut = [];
+    this.lineIn = [];
+    this.choosen = false;
+    this.parentObject = null;
+
+    this.setParentObject = function(object) {
+      this.parentObject = object;
+    }
+
+    this.getParentObject = function() {
+      return this.parentObject;
+    }
   }
 
   function ArduinoElement(name, type, pinCount, pins, statement, statementXs, statementYs) {
@@ -31,17 +44,25 @@ $( document ).ready(function() {
     this.statementXs = statementXs;
     this.statementYs = statementYs;
     this.that = this;
+
+    this.isArduino = function() {
+      return this.name == 'Arduino';
+    }
+  }
+
+  function getColorInt() {
+    return Math.floor(Math.random() * 256);
   }
 
   var responceJson;
-  console.log("ready");
+  //console.log("ready");
   $.ajax({
     url: 'http://localhost:3000/getjson',
     method: 'POST',
     data: 'done',
     dataType: 'html'
   }).done(function (msg) {
-    console.log('success');
+    //console.log('success');
     responceJson = JSON.parse(msg);//, function(k, v) {
       //console.log("k: "+k+" v: "+v);
     //});
@@ -66,19 +87,24 @@ $( document ).ready(function() {
           j++;
         } //else {
           var pin = new Pins(current, arr[i].pinNamesAndTypes[current], arr[i].pinXs[j], arr[i].pinYs[j]);
-          console.log(current+": "+arr[i].pinNamesAndTypes[current]);
+          //console.log(current+": "+arr[i].pinNamesAndTypes[current]);
           pins.push(pin);
           j++;
         //}
         prev = current;
       });
       //for (var j = 0; j < arr[i].pinCount; j++) {
-      console.log("Pins: ");
-      console.log(pins);
+      //console.log("Pins: ");
+      //console.log(pins);
       //}
       arduinoElement.push(new ArduinoElement(arr[i].name, arr[i].type, arr[i].pinCount, pins, arr[i].statement, arr[i].statementXs, arr[i].statementYs));
-      console.log("Element: ");
-      console.log(arduinoElement);
+      var currentElement = arduinoElement.pop()
+      for (var j = 0; j < currentElement.pins.length; j++) {
+        currentElement.pins[j].setParentObject(currentElement);
+      }
+      arduinoElement.push(currentElement);
+      //console.log("Element: ");
+      //console.log(arduinoElement);
       var menuName = arr[i].name==arr[i].type?(arr[i].name):(arr[i].name+' '+arr[i].type);
       if (arr[i].name == 'Arduino') appendArduino = appendArduino + '<a href="#" class="list-group-item" data="'+i+'">'
             + arr[i].name + ' ' + arr[i].type + '<img src="images/' + arr[i].statement.default + '"></a>';
@@ -95,21 +121,20 @@ $( document ).ready(function() {
     }
     $("#panel").css(style);
     myPanel = new jsgl.Panel(document.getElementById("panel"));
+    myPanel.addClickListener(panelInteraction);
+    myPanel.addMouseMoveListener(panelInteraction);
+    myPanel.addMouseDownListener(panelInteraction);
+    myPanel.addMouseOverListener(panelInteraction);
+    myPanel.addMouseOutListener(panelInteraction);
 
     var z=2;
     $("a.list-group-item").filter(function(index) {
       return $(this).attr("class") != "disabled";
     }).on("click", function() {
-      console.log(this);
+      //console.log(this);
       var myImage = myPanel.createImage();
       var index = $(this).attr("data");
       myImage.setUrl("images/" + arduinoElement[index].statement.default);
-      //myImage.setHorizontalAnchor(jsgl.HorizontalAnchor.CENTER);
-      //myImage.setVerticalAnchor(jsgl.VerticalAnchor.MIDDLE);
-      //myImage.setSizeWH(200, 200);
-      //myImage.setLocationXY(style.width/2+myImage.getWidth()/2, style.height/2+myImage.getHeight()/2);
-      //console.log(myImage.getWidth());
-      //if (arduinoElement[$(this).attr("data")].name != 'Arduino') myImage.setSizeWH()
       myPanel.addElement(myImage);
       myImage.setLocationXY(style.width/2-arduinoElement[index].statementXs[0]/2, style.height/2-arduinoElement[index].statementYs[0]/2);
       myImage.setSizeWH(arduinoElement[index].statementXs[0], arduinoElement[index].statementYs[0]);
@@ -118,38 +143,41 @@ $( document ).ready(function() {
       z++;
       //console.log(myImage.getWidth());
       arduinoElement[index].imageOnPanel = myImage;
-      arduinoElement[index].imageOnPanel.addMouseMoveListener(elementInteraction);
-      arduinoElement[index].imageOnPanel.addMouseDownListener(elementInteraction);
-      arduinoElement[index].imageOnPanel.addClickListener(elementInteraction);
+      arduinoElement[index].imageOnPanel.parent = arduinoElement[index];
+      //arduinoElement[index].imageOnPanel.addMouseMoveListener(elementInteraction);
+      //arduinoElement[index].imageOnPanel.addMouseDownListener(elementInteraction);
+      //arduinoElement[index].imageOnPanel.addClickListener(elementInteraction);
       for (var i = 0; i < arduinoElement[index].pinCount; i++) {
-        var pinReck = myPanel.createRectangle();
-        //pinReck.setHorizontalAnchor(jsgl.HorizontalAnchor.CENTER);
-        //pinReck.setVerticalAnchor(jsgl.VerticalAnchor.MIDDLE);
-        pinReck.setLocationXY(arduinoElement[index].imageOnPanel.getX()+arduinoElement[index].pins[i].pinX,
+        var pinRect = myPanel.createRectangle();
+        //pinRect.setHorizontalAnchor(jsgl.HorizontalAnchor.CENTER);
+        //pinRect.setVerticalAnchor(jsgl.VerticalAnchor.MIDDLE);
+        pinRect.setLocationXY(arduinoElement[index].imageOnPanel.getX()+arduinoElement[index].pins[i].pinX,
                               arduinoElement[index].imageOnPanel.getY()+arduinoElement[index].pins[i].pinY);
-        pinReck.setSizeWH(10, 10);
-        if (arduinoElement[index].name == 'Arduino') pinReck.setZIndex(1);
-        else pinReck.setZIndex(z);
-        pinReck.getFill().setColor("rgb(255,0,0)");
-        pinReck.getFill().setOpacity(0.0);
-        pinReck.getStroke().setOpacity(0.0);
-        arduinoElement[index].pins[i].reck = pinReck;
-        arduinoElement[index].pins[i].reck.addMouseOverListener(pinInteraction);
-        arduinoElement[index].pins[i].reck.addMouseOutListener(pinInteraction);
-        arduinoElement[index].pins[i].reck.addMouseDownListener(pinInteraction);
-        arduinoElement[index].pins[i].reck.addClickListener(pinInteraction);
-        myPanel.addElement(arduinoElement[index].pins[i].reck);
+        pinRect.setSizeWH(10, 10);
+        if (arduinoElement[index].name == 'Arduino') pinRect.setZIndex(1);
+        else pinRect.setZIndex(z);
+        pinRect.getFill().setColor("rgb(255,0,0)");
+        pinRect.getFill().setOpacity(0.0);
+        pinRect.getStroke().setOpacity(0.0);
+        //pinRect.choosen = false;
+        arduinoElement[index].pins[i].rect = pinRect;
+        arduinoElement[index].pins[i].rect.parentPin = arduinoElement[index].pins[i];
+        //arduinoElement[index].pins[i].rect.addMouseOverListener(pinInteraction);
+        //arduinoElement[index].pins[i].rect.addMouseOutListener(pinInteraction);
+        //arduinoElement[index].pins[i].rect.addMouseDownListener(pinInteraction);
+        //arduinoElement[index].pins[i].rect.addClickListener(pinInteraction);
+        myPanel.addElement(arduinoElement[index].pins[i].rect);
       }
       z++;
     });
 
     function pinInteraction(eventArgs) {
-      var choosen = false;
+      //var choosen = false;
       switch(eventArgs.getEventType()) {
         case jsgl.MouseEvent.CLICK:
-          sourcePin = eventArgs.getSourceElement();
-          sourcePin.getFill().setOpacity(1.0);
-          choosen = true;
+          //sourcePin = eventArgs.getSourceElement();
+          //sourcePin.getFill().setOpacity(1.0);
+          //choosen = true;
           break;
         case jsgl.MouseEvent.DOWN:
           //sourcePin = eventArgs.getSourceElement();
@@ -167,7 +195,7 @@ $( document ).ready(function() {
           eventArgs.getSourceElement().getFill().setOpacity(1.0);
           break;
         case jsgl.MouseEvent.OUT:
-          if (!choosen) eventArgs.getSourceElement().getFill().setOpacity(0.0);
+          if (!eventArgs.getSourceElement().parentPin.choosen) eventArgs.getSourceElement().getFill().setOpacity(0.0);
           break;
       }
     }
@@ -179,9 +207,9 @@ $( document ).ready(function() {
           break;
         case jsgl.MouseEvent.DOWN:
           sourceElement = eventArgs.getSourceElement();
-          for (var i = 0; i < arduinoElement.length; i++) {
-            if (sourceElement == arduinoElement[i].imageOnPanel) sourceElement.parent = arduinoElement[i];
-          }
+          //for (var i = 0; i < arduinoElement.length; i++) {
+            //if (sourceElement == arduinoElement[i].imageOnPanel) sourceElement.parent = arduinoElement[i];
+          //}
           choosen = true;
           break;
         case jsgl.MouseEvent.UP:
@@ -189,17 +217,179 @@ $( document ).ready(function() {
           break;
         case jsgl.MouseEvent.MOVE:
           //text = "mouse move";
-          if (sourceElement != null) {
-            sourceElement.setLocationXY(eventArgs.getX()-sourceElement.getWidth()/2, eventArgs.getY()-sourceElement.getHeight()/2);
-            for (var i = 0; i < sourceElement.parent.pinCount; i++) {
-              sourceElement.parent.pins[i].reck.setLocationXY(sourceElement.getX()+sourceElement.parent.pins[i].pinX,
-                                                              sourceElement.getY()+sourceElement.parent.pins[i].pinY);
+          if (!currentLine) {
+            if (sourceElement != null) {
+              sourceElement.setLocationXY(eventArgs.getX()-sourceElement.getWidth()/2, eventArgs.getY()-sourceElement.getHeight()/2);
+              for (var i = 0; i < sourceElement.parent.pinCount; i++) {
+                sourceElement.parent.pins[i].rect.setLocationXY(sourceElement.getX()+sourceElement.parent.pins[i].pinX,
+                                                                sourceElement.getY()+sourceElement.parent.pins[i].pinY);
+                //if (sourceElement.parent.isArduino()) console.log("Arduino lagggggggggggggggggggggg");
+                if (sourceElement.parent.pins[i].lineOut.length > 0) {
+                  var lineArray = sourceElement.parent.pins[i].lineOut;
+                  console.log("line out: " + sourceElement.parent.pins[i].lineOut.length);
+                  for (var i = 0; i < lineArray.length; i++) {
+                    lineArray[i].setStartPointXY(sourceElement.parent.pins[i].rect.getX()+5, sourceElement.parent.pins[i].rect.getY()+5);
+                  }
+                }
+                if (sourceElement.parent.pins[i].lineIn.length > 0) {
+                  var lineArray = sourceElement.parent.pins[i].lineIn;
+                  console.log("line in");
+                  for (var i = 0; i < lineArray.length; i++) {
+                    lineArray[i].setEndPointXY(sourceElement.parent.pins[i].rect.getX()+5, sourceElement.parent.pins[i].rect.getY()+5);
+                  }
+                }
+                //if (sourceElement.parent.pins[i].lineIn)
+                //  sourceElement.parent.pins[i].lineIn.setEndPointXY(sourceElement.parent.pins[i].rect.getX()+5, sourceElement.parent.pins[i].rect.getY()+5);
+              }
             }
           }
           break;
         case jsgl.MouseEvent.OVER:
           break;
         case jsgl.MouseEvent.OUT:
+          break;
+      }
+    }
+
+    function panelInteraction(eventArgs) {
+      switch(eventArgs.getEventType()) {
+        case jsgl.MouseEvent.CLICK:
+          /*if (sourceElement) {
+            for (var i = 0; i < sourceElement.parent.pins.length; i++) {
+              var pin = sourceElement.parent.pins[i];
+              //pin.rect.setLocationXY(sourceElement.getX()+pin.pinX,
+              //                       sourceElement.getY()+pin.pinY);
+              //if (sourceElement.parent.isArduino()) console.log("Arduino lagggggggggggggggggggggg");
+              //console.log(i+": "+pin.lineOut.length);
+              if (pin.lineOut.length > 0) {
+                //var lineArray = pin.lineOut;
+                //console.log("line out: " + pin.lineOut.length);
+                for (var j = 0; j < pin.lineOut.length; j++) {
+                  pin.lineOut[i].setStartPointXY(pin.rect.getX()+5, pin.rect.getY()+5);
+                }
+              }
+              if (pin.lineIn.length > 0) {
+                //var lineArray = pin.lineIn;
+                //console.log("line in: " + pin.lineIn.length);
+                for (var j = 0; j < pin.lineIn.length; j++) {
+                  pin.lineIn[i].setEndPointXY(pin.rect.getX()+5, pin.rect.getY()+5);
+                }
+              }
+              //pinsIterator[i] = pin;
+              //if (sourceElement.parent.pins[i].lineIn)
+              //  sourceElement.parent.pins[i].lineIn.setEndPointXY(sourceElement.parent.pins[i].rect.getX()+5, sourceElement.parent.pins[i].rect.getY()+5);
+            }
+          }*/
+          sourceElement = null;
+          if (sourcePinFromPanel){
+            var nextSourcePinFromPanel = eventArgs.getSourceElement();
+            if (nextSourcePinFromPanel instanceof jsgl.elements.RectangleElement) {
+              if (sourcePinFromPanel === nextSourcePinFromPanel) {
+                sourcePinFromPanel.getFill().setOpacity(0.0);
+                myPanel.removeElement(sourcePinFromPanel.parentPin.lineOut.pop());
+                //sourcePinFromPanel.parentPin.lineOut = null;
+                sourcePinFromPanel.parentPin.choosen = false;
+                console.log("Rectange = Rectangle");
+                sourcePinFromPanel = null;
+                currentLine = null;
+              } else {
+                //console.log(sourcePinFromPanel);
+                //console.log(sourcePinFromPanel.parent);
+                //console.log(sourcePinFromPanel.parentPin.parentObject);
+                if (sourcePinFromPanel.parentPin.parentObject === nextSourcePinFromPanel.parentPin.parentObject) {
+                  // shall i destroy the line (Pins.lineOut) or not?
+                  // this time nothing happens
+                  console.log("Rectange.parent = Rectangle.parent");
+                } else {
+                  sourcePinFromPanel.parentPin.pinOut = nextSourcePinFromPanel.parentPin;
+                  nextSourcePinFromPanel.parentPin.pinIn = sourcePinFromPanel.parentPin;
+                  currentLine = sourcePinFromPanel.parentPin.lineOut.pop();
+                  if (sourcePinFromPanel.parentPin.parentObject.isArduino())
+                    currentLine.getStroke().setColor("rgb(0,127,0)");//sourcePinFromPanel.parentPin.lineOut.getStroke().setColor("rgb(0,127,0)");
+                  else if (!sourcePinFromPanel.parentPin.parentObject.isArduino() && nextSourcePinFromPanel.parentPin.pinType == 'ground')
+                    currentLine.getStroke().setColor("rgb(0,0,127)");//sourcePinFromPanel.parentPin.lineOut.getStroke().setColor("rgb(0,0,127)");
+                  else currentLine.getStroke().setColor("rgb(" + getColorInt() + "," + getColorInt() + "," + getColorInt() + ")");//sourcePinFromPanel.parentPin.lineOut.getStroke().setColor("rgb(" + getColorInt() + "," + getColorInt() + "," + getColorInt() + ")");
+                  currentLine.setEndPointXY(nextSourcePinFromPanel.getX()+5, nextSourcePinFromPanel.getY()+5);//sourcePinFromPanel.parentPin.lineOut.setEndPointXY(nextSourcePinFromPanel.getX()+5, nextSourcePinFromPanel.getY()+5);
+                  sourcePinFromPanel.getFill().setOpacity(0.0);
+                  sourcePinFromPanel.parentPin.lineOut.push(currentLine);
+                  nextSourcePinFromPanel.parentPin.lineIn.push(currentLine); //= sourcePinFromPanel.parentPin.lineOut;
+                  sourcePinFromPanel = null;
+                  currentLine = null;
+                }
+              }
+            }
+          } else {
+            sourcePinFromPanel = eventArgs.getSourceElement();
+            if (sourcePinFromPanel instanceof jsgl.elements.RectangleElement) {
+              console.log("Rectangle");
+              sourcePinFromPanel.getFill().setOpacity(1.0);
+              sourcePinFromPanel.parentPin.choosen = true;
+              var myLine = myPanel.createLine();
+              myLine.setStartPointXY(sourcePinFromPanel.getX()+5, sourcePinFromPanel.getY()+5);
+              myLine.setEndPointXY(eventArgs.getX(), eventArgs.getY());
+              myLine.getStroke().setWeight(5);
+              myLine.getStroke().setColor("rgb(0,0,0)");
+              sourcePinFromPanel.parentPin.lineOut.push(myLine);
+              myPanel.addElement(sourcePinFromPanel.parentPin.lineOut[sourcePinFromPanel.parentPin.lineOut.length-1]);
+              currentLine = sourcePinFromPanel.parentPin.lineOut[sourcePinFromPanel.parentPin.lineOut.length-1];
+              console.log(sourcePinFromPanel.parentPin.lineOut.length);
+              //sourcePinFromPanel.parentPin.lineOut;
+              //currentLine = sourcePinFromPanel.parent.lineOut;
+            } else sourcePinFromPanel = null;
+          }
+          break;
+        case jsgl.MouseEvent.DOWN:
+          if (!sourcePinFromPanel) {
+            if (eventArgs.getSourceElement() instanceof jsgl.elements.ImageElement) sourceElement = eventArgs.getSourceElement();
+          }
+          break;
+        case jsgl.MouseEvent.UP:
+          //text = "mouse up";
+          break;
+        case jsgl.MouseEvent.MOVE:
+          //text = "mouse move";
+          if (currentLine) {
+            currentLine.setEndPointXY(eventArgs.getX(), eventArgs.getY());
+          } else {
+            //console.log("currentLine = null");
+            if (sourceElement != null) {
+              //console.log("sourceElement != null");
+              sourceElement.setLocationXY(eventArgs.getX()-sourceElement.getWidth()/2, eventArgs.getY()-sourceElement.getHeight()/2);
+              //var pinsIterator = sourceElement.parent.pins;
+              for (var i = 0; i < sourceElement.parent.pins.length; i++) {
+                var pin = sourceElement.parent.pins[i];
+                pin.rect.setLocationXY(sourceElement.getX()+pin.pinX,
+                                       sourceElement.getY()+pin.pinY);
+                //if (sourceElement.parent.isArduino()) console.log("Arduino lagggggggggggggggggggggg");
+                //console.log(i+": "+pin.lineOut.length);
+                if (pin.lineOut.length > 0) {
+                  //var lineArray = pin.lineOut;
+                  //console.log("line out: " + pin.lineOut.length);
+                  for (var j = 0; j < pin.lineOut.length; j++) {
+                    pin.lineOut[j].setStartPointXY(pin.rect.getX()+5, pin.rect.getY()+5);
+                  }
+                }
+                if (pin.lineIn.length > 0) {
+                  //var lineArray = pin.lineIn;
+                  //console.log("line in: " + pin.lineIn.length);
+                  for (var j = 0; j < pin.lineIn.length; j++) {
+                    pin.lineIn[j].setEndPointXY(pin.rect.getX()+5, pin.rect.getY()+5);
+                  }
+                }
+                //pinsIterator[i] = pin;
+                //if (sourceElement.parent.pins[i].lineIn)
+                //  sourceElement.parent.pins[i].lineIn.setEndPointXY(sourceElement.parent.pins[i].rect.getX()+5, sourceElement.parent.pins[i].rect.getY()+5);
+              }
+              //sourceElement.parent.pins = pinsIterator;
+            }
+          }
+          break;
+        case jsgl.MouseEvent.OVER:
+          if (eventArgs.getSourceElement() instanceof jsgl.elements.RectangleElement) eventArgs.getSourceElement().getFill().setOpacity(1.0);
+          break;
+        case jsgl.MouseEvent.OUT:
+          if (eventArgs.getSourceElement() instanceof jsgl.elements.RectangleElement
+          && !eventArgs.getSourceElement().parentPin.choosen) eventArgs.getSourceElement().getFill().setOpacity(0.0);
           break;
       }
     }
