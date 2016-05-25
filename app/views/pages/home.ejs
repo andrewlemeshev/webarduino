@@ -1,18 +1,38 @@
 <% layout('../layout') -%>
-<div class="list-group menu">
-  <a href="#" class="list-group-item disabled">
-    cvwdmkvownnvdw
-  </a>
-  <a href="#" class="list-group-item">
-    dwvvwvwvwvvdvwv
-  </a>
+<div class="canvas">
+  <div class="menu">
+    <div class="list-group" id="menu">
+      <a href="#" class="list-group-item disabled">
+        Arduino
+      </a>
+      <a href="#" class="list-group-item">
+        Test
+      </a>
+    </div>
+    <div class="btn-group" role="group">
+      <button type="button" class="btn btn-danger btn-delete disabled buttonInGroup" id="btn-delete">Delete</button>
+      <button type="button" class="btn btn-primary buttonInGroup" data-toggle="offcanvas" data-target="#history" data-canvas="body">History</button>
+    </div>
+  </div>
+  <!-- <div class="panel"> -->
+  <div id="panel" class="panel"></div>
+  <nav id="history" class="navmenu navmenu-default navmenu-fixed-right offcanvas" role="navigation">
+    <button class="btn btn-link navmenu-brand" id="historyClose">Close history</button>
+    <ul class="nav navmenu-nav">
+      <li>1</li>
+      <li>2</li>
+      <li>3</li>
+    </ul>
+  </nav>
+  <!-- <button id="sidePanelButton" href="external.html" data-slidepanel="panel" class="btn btn-primary">History</button> -->
 </div>
-<div id="panel" class="panel"></div>
+<!-- </div> -->
 <script type="text/javascript">
 $( document ).ready(function() {
   var sourcePin = null, sourceElement = null, sourcePinFromPanel = null, currentLine = null;
   var arduinoElement = [];
   var wires = [];
+  var sidePanel = false;
 
   function Pins(pinName, pinType, pinX, pinY) {
     this.pinName = pinName;
@@ -54,6 +74,12 @@ $( document ).ready(function() {
     return Math.floor(Math.random() * 256);
   }
 
+  $('[data-slidepanel]').slidepanel({
+      orientation: 'right',
+      mode: 'push',
+      static: true
+  });
+
   var responceJson;
   //console.log("ready");
   $.ajax({
@@ -67,7 +93,9 @@ $( document ).ready(function() {
       //console.log("k: "+k+" v: "+v);
     //});
     console.log(responceJson);
+    $("#btn-delete").removeClass("disabled");
     var firstMeet = false;
+    var deleteMode = false;
     var appendArduino = '<a href="#" class="list-group-item disabled">Arduino</a>';
     var appendComponent = '<a href="#" class="list-group-item disabled">Components</a>'
     var arr = Object.keys(responceJson).map(function(k, v) {  return responceJson[k] });//console.log(k);console.log(v);
@@ -112,14 +140,37 @@ $( document ).ready(function() {
             + menuName + '<p><img src="images/' + arr[i].statement.default + '"></p></a>';
     }
 
-    $(".menu").html(appendArduino+appendComponent);
+    $("#menu").html(appendArduino+appendComponent);
     //var height = window.screen.availHeight * 0.9;
     //var width = window.screen.availWidth * 0.9;
     var style = {
-      width: window.screen.availWidth * 0.85,
+      width: window.screen.availWidth * 0.88,
       height: window.screen.availHeight * 0.8
     }
-    $("#panel").css(style);
+
+    var oppasity = window.screen.availWidth * 0.13;
+
+    $("#sidePanelButton").on('click', function() {
+      if (!sidePanel) {
+        style.width = style.width - oppasity;
+        $(".panel").css(style);
+      }
+      sidePanel = true;
+    });
+
+    $("a.close").on('click', function() {
+      if (sidePanel) {
+        style.width = style.width + oppasity;
+        $(".panel").css(style);
+      }
+      sidePanel = false;
+    });
+
+    $("#historyClose").on('click', function() {
+      $("#history").offcanvas('hide');
+    });
+
+    $(".panel").css(style);
     myPanel = new jsgl.Panel(document.getElementById("panel"));
     myPanel.addClickListener(panelInteraction);
     myPanel.addMouseMoveListener(panelInteraction);
@@ -169,6 +220,39 @@ $( document ).ready(function() {
         myPanel.addElement(arduinoElement[index].pins[i].rect);
       }
       z++;
+    });
+    $("#btn-delete").on('click', function() {
+      deleteMode = !deleteMode;
+      if (deleteMode) {
+        //console.log(this);
+        $("#btn-delete").addClass("active");
+        myPanel.removeClickListener(panelInteraction);
+        myPanel.removeMouseMoveListener(panelInteraction);
+        myPanel.removeMouseDownListener(panelInteraction);
+        myPanel.removeMouseOverListener(panelInteraction);
+        myPanel.removeMouseOutListener(panelInteraction);
+        /* --------------------------------------------- */
+        myPanel.addClickListener(deleteElement);
+        myPanel.addMouseOverListener(deleteElement);
+        myPanel.addMouseOutListener(deleteElement);
+        myPanel.addMouseMoveListener(deleteElement);
+        myPanel.addMouseDownListener(deleteElement);
+        myPanel.setCursor(jsgl.Cursor.CROSSHAIR);
+      } else {
+        $("#btn-delete").removeClass("active");
+        myPanel.removeClickListener(deleteElement);
+        myPanel.removeMouseOverListener(deleteElement);
+        myPanel.removeMouseOutListener(deleteElement);
+        myPanel.removeMouseMoveListener(deleteElement);
+        myPanel.removeMouseDownListener(deleteElement);
+        /* --------------------------------------------- */
+        myPanel.addClickListener(panelInteraction);
+        myPanel.addMouseMoveListener(panelInteraction);
+        myPanel.addMouseDownListener(panelInteraction);
+        myPanel.addMouseOverListener(panelInteraction);
+        myPanel.addMouseOutListener(panelInteraction);
+        myPanel.setCursor(jsgl.Cursor.DEFAULT);
+      }
     });
 
     function pinInteraction(eventArgs) {
@@ -254,32 +338,6 @@ $( document ).ready(function() {
     function panelInteraction(eventArgs) {
       switch(eventArgs.getEventType()) {
         case jsgl.MouseEvent.CLICK:
-          /*if (sourceElement) {
-            for (var i = 0; i < sourceElement.parent.pins.length; i++) {
-              var pin = sourceElement.parent.pins[i];
-              //pin.rect.setLocationXY(sourceElement.getX()+pin.pinX,
-              //                       sourceElement.getY()+pin.pinY);
-              //if (sourceElement.parent.isArduino()) console.log("Arduino lagggggggggggggggggggggg");
-              //console.log(i+": "+pin.lineOut.length);
-              if (pin.lineOut.length > 0) {
-                //var lineArray = pin.lineOut;
-                //console.log("line out: " + pin.lineOut.length);
-                for (var j = 0; j < pin.lineOut.length; j++) {
-                  pin.lineOut[i].setStartPointXY(pin.rect.getX()+5, pin.rect.getY()+5);
-                }
-              }
-              if (pin.lineIn.length > 0) {
-                //var lineArray = pin.lineIn;
-                //console.log("line in: " + pin.lineIn.length);
-                for (var j = 0; j < pin.lineIn.length; j++) {
-                  pin.lineIn[i].setEndPointXY(pin.rect.getX()+5, pin.rect.getY()+5);
-                }
-              }
-              //pinsIterator[i] = pin;
-              //if (sourceElement.parent.pins[i].lineIn)
-              //  sourceElement.parent.pins[i].lineIn.setEndPointXY(sourceElement.parent.pins[i].rect.getX()+5, sourceElement.parent.pins[i].rect.getY()+5);
-            }
-          }*/
           sourceElement = null;
           if (sourcePinFromPanel){
             var nextSourcePinFromPanel = eventArgs.getSourceElement();
@@ -393,84 +451,50 @@ $( document ).ready(function() {
           break;
       }
     }
-    //var element = {
 
-    //};
-
-    /*var source;
-
-    var taked = function(eventArgs) {
-      source = eventArgs.getSourceElement();
-      //if (eventArgs.getEventType() == jsgl.MouseEvent.MOVE)
-        source.setCenterLocationXY(eventArgs.getX(), eventArgs.getY());
-      label.setText("Clicked");
-    }
-
-    var moving = function(eventArgs) {
-      if (source != null) source.setLocationXY(eventArgs.getX(), eventArgs.getY());
-      circle.setCenterLocationXY(eventArgs.getX(), eventArgs.getY());
-      label.setText("Moving: "+eventArgs.getX() + "" + eventArgs.getY());
-    }
-
-    var mouseUp = function(eventArgs) {
-      source = null;
-      //if (eventArgs.getEventType() == jsgl.MouseEvent.MOVE)
-      //  source.setLocationXY(eventArgs.getX(), eventArgs.getY());
-      label.setText("Not clicked");
-    }
-
-    var func = function(eventArgs) {
-      var text;
+    function deleteElement(eventArgs) {
+      var strokeColor;
+      var strokeWeight;
+      var elementThatAboutToDelete;
       switch(eventArgs.getEventType()) {
         case jsgl.MouseEvent.CLICK:
-          source = null;
-          text = "click: ";
+          console.log("Clicked on: ");
+          console.log(eventArgs.getSourceElement());
+          myPanel.removeElement(eventArgs.getSourceElement());
+          //if (elementThatAboutToDelete) myPanel.removeElement(eventArgs.getSourceElement());
           break;
         case jsgl.MouseEvent.DOWN:
-          source = eventArgs.getSourceElement();
-          text = "down: ";
+
+          break;
+        case jsgl.MouseEvent.UP:
+
           break;
         case jsgl.MouseEvent.MOVE:
-          if (source != null) {
-            if (source instanceof jsgl.elements.CircleElement) source.setCenterLocationXY(eventArgs.getX(), eventArgs.getY());
-            else if (source instanceof jsgl.elements.LabelElement) source.setLocationXY(eventArgs.getX(), eventArgs.getY());
+
+          break;
+        case jsgl.MouseEvent.OVER:
+          elementThatAboutToDelete = eventArgs.getSourceElement();
+          console.log(elementThatAboutToDelete);
+          if (elementThatAboutToDelete) {
+            elementThatAboutToDelete.getStroke().setEnabled(true);
+            strokeWeight = elementThatAboutToDelete.getStroke().getWeight();
+            elementThatAboutToDelete.getStroke().setWeight(10);
+            strokeColor = elementThatAboutToDelete.getStroke().getColor();
+            elementThatAboutToDelete.getStroke().setColor("rgb(0,0,0)");
+
+            console.log("123");
           }
-          text = "move: ";
           break;
         case jsgl.MouseEvent.OUT:
-          source = null;
-          text = "out: ";
+          if (elementThatAboutToDelete) {
+            elementThatAboutToDelete.getStroke().setWeight(strokeWeight);
+            elementThatAboutToDelete.getStroke().setColor(strokeColor);
+            //elementThatAboutToDelete.getStroke().setEnabled(false);
+          }
+          elementThatAboutToDelete = null;
           break;
       }
-      label.setText(text+eventArgs.getX() + " " + eventArgs.getY());
     }
-
-    circle.addMouseDownListener(func);
-    circle.addMouseMoveListener(func);
-    circle.addMouseOutListener(func);
-    circle.addClickListener(func);
-    label.addMouseDownListener(func);
-    label.addMouseMoveListener(func);
-    label.addMouseOutListener(func);
-    label.addClickListener(func);*/
-    //myPanel.addMouseDownListener(taked);
-    //myPanel.addMouseMoveListener(moving);
-    //myPanel.addClickListener(mouseUp);
-    //circle.addClickListener(mouseUp);
-    //polygon.addClickListener(mouseUp);
-    //label.addClickListener(mouseUp);
-    /*var handler = function(eventArgs) {
-    var text;
-    switch(eventArgs.getEventType()) {
-      case jsgl.MouseEvent.CLICK:
-        circle.setCenterLocationXY(eventArgs.getX(), eventArgs.getY());
-        break;
-      case jsgl.MouseEvent.DOWN:
-        circle.setCenterLocationXY(eventArgs.getX(), eventArgs.getY());
-        break;
-    }
-    label.setText(text + " (" + eventArgs.getX() + "," + eventArgs.getY() + ")");
-  }*/
   });
 });
 </script>

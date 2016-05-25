@@ -22,7 +22,7 @@ app.get('/', pages.home);
 app.get('/about', pages.about);
 app.post('/getjson', function(req, res){
   var json;
-  console.log('body: ' + req.body);
+  //console.log('body: ' + req.body);
   fs.readFile('arduinoElements.json', 'utf8', function (err,data) {
     if (err) {
       return console.log(err);
