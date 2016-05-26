@@ -18,11 +18,9 @@
   <div id="panel" class="panel"></div>
   <nav id="history" class="navmenu navmenu-default navmenu-fixed-right offcanvas" role="navigation">
     <button class="btn btn-link navmenu-brand" id="historyClose">Close history</button>
-    <ul class="nav navmenu-nav">
-      <li>1</li>
-      <li>2</li>
-      <li>3</li>
-    </ul>
+    <div class="list-group" id="historyMenu">
+
+    </div>
   </nav>
   <!-- <button id="sidePanelButton" href="external.html" data-slidepanel="panel" class="btn btn-primary">History</button> -->
 </div>
@@ -33,6 +31,7 @@ $( document ).ready(function() {
   var arduinoElement = [];
   var wires = [];
   var sidePanel = false;
+  var history = [];
 
   function Pins(pinName, pinType, pinX, pinY) {
     this.pinName = pinName;
@@ -178,6 +177,15 @@ $( document ).ready(function() {
     myPanel.addMouseOverListener(panelInteraction);
     myPanel.addMouseOutListener(panelInteraction);
 
+    $("#historyMenu").on('click', '#backToTheFuture', function() {
+      //console.log(this);
+      var index = $(this).attr("data");
+      for (var i = history.length-1; i >= index; i--) {
+        myPanel.removeElement(history.pop());
+      }
+      historyUpdate(history);
+    });
+
     var z=2;
     $("a.list-group-item").filter(function(index) {
       return $(this).attr("class") != "disabled";
@@ -186,7 +194,6 @@ $( document ).ready(function() {
       var myImage = myPanel.createImage();
       var index = $(this).attr("data");
       myImage.setUrl("images/" + arduinoElement[index].statement.default);
-      myPanel.addElement(myImage);
       myImage.setLocationXY(style.width/2-arduinoElement[index].statementXs[0]/2, style.height/2-arduinoElement[index].statementYs[0]/2);
       myImage.setSizeWH(arduinoElement[index].statementXs[0], arduinoElement[index].statementYs[0]);
       if (arduinoElement[index].name == 'Arduino') myImage.setZIndex(0);
@@ -195,6 +202,9 @@ $( document ).ready(function() {
       //console.log(myImage.getWidth());
       arduinoElement[index].imageOnPanel = myImage;
       arduinoElement[index].imageOnPanel.parent = arduinoElement[index];
+      myPanel.addElement(arduinoElement[index].imageOnPanel);
+      history.push(arduinoElement[index].imageOnPanel);
+      historyUpdate(history);
       //arduinoElement[index].imageOnPanel.addMouseMoveListener(elementInteraction);
       //arduinoElement[index].imageOnPanel.addMouseDownListener(elementInteraction);
       //arduinoElement[index].imageOnPanel.addClickListener(elementInteraction);
@@ -359,6 +369,7 @@ $( document ).ready(function() {
                   // this time nothing happens
                   console.log("Rectange.parent = Rectangle.parent");
                 } else {
+                  console.log("Rectange.parent != Rectangle.parent");
                   sourcePinFromPanel.parentPin.pinOut = nextSourcePinFromPanel.parentPin;
                   nextSourcePinFromPanel.parentPin.pinIn = sourcePinFromPanel.parentPin;
                   currentLine = sourcePinFromPanel.parentPin.lineOut.pop();
@@ -371,6 +382,8 @@ $( document ).ready(function() {
                   sourcePinFromPanel.getFill().setOpacity(0.0);
                   sourcePinFromPanel.parentPin.lineOut.push(currentLine);
                   nextSourcePinFromPanel.parentPin.lineIn.push(currentLine); //= sourcePinFromPanel.parentPin.lineOut;
+                  history.push(currentLine);
+                  historyUpdate(history);
                   sourcePinFromPanel = null;
                   currentLine = null;
                 }
@@ -494,6 +507,15 @@ $( document ).ready(function() {
           elementThatAboutToDelete = null;
           break;
       }
+    }
+
+    function historyUpdate(history) {
+      var s = '';
+      for (var i = history.length-1; i >=0 ; i--) {
+        if (history[i] instanceof jsgl.elements.ImageElement) s = s + '<a href="#" id="backToTheFuture" class="list-group-item" data="' + i + '">Created ' + history[i].parent.name + '</a>';
+        else if (history[i] instanceof jsgl.elements.LineElement) s = s + '<a href="#" id="backToTheFuture" class="list-group-item" data="' + i + '">Created wire</a>';
+      }
+      $("#historyMenu").html(s);
     }
   });
 });
