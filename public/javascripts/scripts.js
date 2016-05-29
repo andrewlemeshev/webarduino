@@ -1,9 +1,12 @@
 $( document ).ready(function() {
   var sourcePin = null, sourceElement = null, sourcePinFromPanel = null, currentLine = null;
   var arduinoElement = [];
+  var arduinoElementActive = [];
   var wires = [];
   var sidePanel = false;
   var history = [];
+  var info = "";
+  var idElement = 0;
 
   function Pins(pinName, pinType, pinX, pinY) {
     this.pinName = pinName;
@@ -35,6 +38,7 @@ $( document ).ready(function() {
     this.statementXs = statementXs;
     this.statementYs = statementYs;
     this.that = this;
+    this.id = null;
 
     this.isArduino = function() {
       return this.name == 'Arduino';
@@ -116,7 +120,7 @@ $( document ).ready(function() {
     //var width = window.screen.availWidth * 0.9;
     var style = {
       width: window.screen.availWidth * 0.88,
-      height: window.screen.availHeight * 0.8
+      height: window.screen.availHeight * 0.80
     }
 
     var oppasity = window.screen.availWidth * 0.13;
@@ -153,14 +157,53 @@ $( document ).ready(function() {
       //console.log(this);
       var index = $(this).attr("data");
       for (var i = history.length-1; i >= index; i--) {
-        myPanel.removeElement(history.pop());
+        var elementToDelete = history.pop();
+        myPanel.removeElement(elementToDelete);
+        for (var j = 0; j < elementToDelete.parent.pins.length; j++) {
+          myPanel.removeElement(elementToDelete.parent.pins[j].reck);
+        }
       }
       historyUpdate(history);
     });
 
+    $("#startButton").on('click', function() {
+      var warning = false;
+      if (arduinoElement.length < 2) $("#infoLabel").html("Create more elements");
+      else {
+        for (var i = 0; i < arduinoElement.length; i++) {
+          var hasOut = false;
+          var hasIn = false;
+          for (var j = 0; j < arduinoElementActive[i].pins.length; j++) {
+            if (arduinoElementActive[i].pins[j].pinOut) {
+              hasOut = true;
+              if (arduinoElementActive[i].name == "Arduino") {
+                //console.log(arduinoElement[i].pins[j].pinName);
+                recursiveCheck(arduinoElementActive[i].pins[j].pinOut.parentObject);
+              }
+            }
+            if (arduinoElementActive[i].pins[j].pinIn) {
+              hasIn = true;
+            }
+          }
+          warning = hasOut & hasIn;
+        }
+        console.log(info);
+        if (!warning) {
+          $("#infoLabel").attr("class", "label label-warning infoLabel");
+          $("#infoLabel").html("One of the elements is not wired");
+        } else if (info == "success") {
+          $("#infoLabel").attr("class", "label label-success infoLabel");
+          $("#infoLabel").html("Everything is OK");
+        } else if (info == "error") {
+          $("#infoLabel").attr("class", "label label-danger infoLabel");
+          $("#infoLabel").html("Electrical network should finish with Ground pin");
+        }
+      }
+    })
+
     var z=2;
     $("a.list-group-item").filter(function(index) {
-      return $(this).attr("class") != "disabled";
+      return $(this).attr("class") != "list-group-item disabled";
     }).on("click", function() {
       //console.log(this);
       var myImage = myPanel.createImage();
@@ -168,38 +211,52 @@ $( document ).ready(function() {
       myImage.setUrl("images/" + arduinoElement[index].statement.default);
       myImage.setLocationXY(style.width/2-arduinoElement[index].statementXs[0]/2, style.height/2-arduinoElement[index].statementYs[0]/2);
       myImage.setSizeWH(arduinoElement[index].statementXs[0], arduinoElement[index].statementYs[0]);
-      if (arduinoElement[index].name == 'Arduino') myImage.setZIndex(0);
+      if (arduinoElement[index].name == 'Arduino') {
+        $("#infoLabel").attr("class", "label label-info infoLabel");
+        $("#infoLabel").html("Create an element for Arduino");
+        myImage.setZIndex(0);
+      }
       else myImage.setZIndex(z);
       z++;
+      var clonePins = [];
+      for (var i = 0; i < arduinoElement[index].pins.length; i++) {
+        clonePins[i] = jQuery.extend(true, {}, arduinoElement[index].pins[i]);
+      }
+
+      var cloneArduinoElement = jQuery.extend(true, {}, arduinoElement[index]);
+      cloneArduinoElement.pins = clonePins;
+      arduinoElementActive.push(cloneArduinoElement);
+      arduinoElementActive[arduinoElementActive.length-1].id = idElement;
+      idElement++;
       //console.log(myImage.getWidth());
-      arduinoElement[index].imageOnPanel = myImage;
-      arduinoElement[index].imageOnPanel.parent = arduinoElement[index];
-      myPanel.addElement(arduinoElement[index].imageOnPanel);
-      history.push(arduinoElement[index].imageOnPanel);
+      //arduinoElement[index].imageOnPanel = myImage;
+      //arduinoElement[index].imageOnPanel.parent = arduinoElement[index];
+      //myPanel.addElement(arduinoElement[index].imageOnPanel);
+      //history.push(arduinoElement[index].imageOnPanel);
+      arduinoElementActive[arduinoElementActive.length-1].imageOnPanel = myImage;
+      arduinoElementActive[arduinoElementActive.length-1].imageOnPanel.parent = arduinoElementActive[arduinoElementActive.length-1];
+      myPanel.addElement(arduinoElementActive[arduinoElementActive.length-1].imageOnPanel);
+      history.push(arduinoElementActive[arduinoElementActive.length-1].imageOnPanel);
+      console.log(arduinoElementActive.length);
+      console.log(arduinoElementActive);
       historyUpdate(history);
-      //arduinoElement[index].imageOnPanel.addMouseMoveListener(elementInteraction);
-      //arduinoElement[index].imageOnPanel.addMouseDownListener(elementInteraction);
-      //arduinoElement[index].imageOnPanel.addClickListener(elementInteraction);
-      for (var i = 0; i < arduinoElement[index].pinCount; i++) {
+      for (var i = 0; i < arduinoElementActive[arduinoElementActive.length-1].pinCount; i++) {
         var pinRect = myPanel.createRectangle();
         //pinRect.setHorizontalAnchor(jsgl.HorizontalAnchor.CENTER);
         //pinRect.setVerticalAnchor(jsgl.VerticalAnchor.MIDDLE);
-        pinRect.setLocationXY(arduinoElement[index].imageOnPanel.getX()+arduinoElement[index].pins[i].pinX,
-                              arduinoElement[index].imageOnPanel.getY()+arduinoElement[index].pins[i].pinY);
+        pinRect.setLocationXY(arduinoElementActive[arduinoElementActive.length-1].imageOnPanel.getX()+arduinoElementActive[arduinoElementActive.length-1].pins[i].pinX,
+                              arduinoElementActive[arduinoElementActive.length-1].imageOnPanel.getY()+arduinoElementActive[arduinoElementActive.length-1].pins[i].pinY);
         pinRect.setSizeWH(10, 10);
-        if (arduinoElement[index].name == 'Arduino') pinRect.setZIndex(1);
+        if (arduinoElementActive[arduinoElementActive.length-1].name == 'Arduino') pinRect.setZIndex(1);
         else pinRect.setZIndex(z);
         pinRect.getFill().setColor("rgb(255,0,0)");
         pinRect.getFill().setOpacity(0.0);
         pinRect.getStroke().setOpacity(0.0);
-        //pinRect.choosen = false;
-        arduinoElement[index].pins[i].rect = pinRect;
-        arduinoElement[index].pins[i].rect.parentPin = arduinoElement[index].pins[i];
-        //arduinoElement[index].pins[i].rect.addMouseOverListener(pinInteraction);
-        //arduinoElement[index].pins[i].rect.addMouseOutListener(pinInteraction);
-        //arduinoElement[index].pins[i].rect.addMouseDownListener(pinInteraction);
-        //arduinoElement[index].pins[i].rect.addClickListener(pinInteraction);
-        myPanel.addElement(arduinoElement[index].pins[i].rect);
+        //pinRect.choosen = false;idElement
+        arduinoElementActive[arduinoElementActive.length-1].pins[i].setParentObject(arduinoElementActive[arduinoElementActive.length-1]);
+        arduinoElementActive[arduinoElementActive.length-1].pins[i].rect = pinRect;
+        arduinoElementActive[arduinoElementActive.length-1].pins[i].rect.parentPin = arduinoElementActive[arduinoElementActive.length-1].pins[i];
+        myPanel.addElement(arduinoElementActive[arduinoElementActive.length-1].pins[i].rect);
       }
       z++;
     });
@@ -324,7 +381,7 @@ $( document ).ready(function() {
           if (sourcePinFromPanel){
             var nextSourcePinFromPanel = eventArgs.getSourceElement();
             if (nextSourcePinFromPanel instanceof jsgl.elements.RectangleElement) {
-              if (sourcePinFromPanel === nextSourcePinFromPanel) {
+              if (sourcePinFromPanel == nextSourcePinFromPanel) {
                 sourcePinFromPanel.getFill().setOpacity(0.0);
                 myPanel.removeElement(sourcePinFromPanel.parentPin.lineOut.pop());
                 //sourcePinFromPanel.parentPin.lineOut = null;
@@ -335,8 +392,9 @@ $( document ).ready(function() {
               } else {
                 //console.log(sourcePinFromPanel);
                 //console.log(sourcePinFromPanel.parent);
-                //console.log(sourcePinFromPanel.parentPin.parentObject);
-                if (sourcePinFromPanel.parentPin.parentObject === nextSourcePinFromPanel.parentPin.parentObject) {
+                console.log(sourcePinFromPanel.parentPin.parentObject);
+                console.log(nextSourcePinFromPanel.parentPin.parentObject);
+                if (sourcePinFromPanel.parentPin.parentObject.id == nextSourcePinFromPanel.parentPin.parentObject.id) {
                   // shall i destroy the line (Pins.lineOut) or not?
                   // this time nothing happens
                   console.log("Rectange.parent = Rectangle.parent");
@@ -394,36 +452,23 @@ $( document ).ready(function() {
           if (currentLine) {
             currentLine.setEndPointXY(eventArgs.getX(), eventArgs.getY());
           } else {
-            //console.log("currentLine = null");
             if (sourceElement != null) {
-              //console.log("sourceElement != null");
               sourceElement.setLocationXY(eventArgs.getX()-sourceElement.getWidth()/2, eventArgs.getY()-sourceElement.getHeight()/2);
-              //var pinsIterator = sourceElement.parent.pins;
               for (var i = 0; i < sourceElement.parent.pins.length; i++) {
                 var pin = sourceElement.parent.pins[i];
                 pin.rect.setLocationXY(sourceElement.getX()+pin.pinX,
                                        sourceElement.getY()+pin.pinY);
-                //if (sourceElement.parent.isArduino()) console.log("Arduino lagggggggggggggggggggggg");
-                //console.log(i+": "+pin.lineOut.length);
                 if (pin.lineOut.length > 0) {
-                  //var lineArray = pin.lineOut;
-                  //console.log("line out: " + pin.lineOut.length);
                   for (var j = 0; j < pin.lineOut.length; j++) {
                     pin.lineOut[j].setStartPointXY(pin.rect.getX()+5, pin.rect.getY()+5);
                   }
                 }
                 if (pin.lineIn.length > 0) {
-                  //var lineArray = pin.lineIn;
-                  //console.log("line in: " + pin.lineIn.length);
                   for (var j = 0; j < pin.lineIn.length; j++) {
                     pin.lineIn[j].setEndPointXY(pin.rect.getX()+5, pin.rect.getY()+5);
                   }
                 }
-                //pinsIterator[i] = pin;
-                //if (sourceElement.parent.pins[i].lineIn)
-                //  sourceElement.parent.pins[i].lineIn.setEndPointXY(sourceElement.parent.pins[i].rect.getX()+5, sourceElement.parent.pins[i].rect.getY()+5);
               }
-              //sourceElement.parent.pins = pinsIterator;
             }
           }
           break;
@@ -488,6 +533,23 @@ $( document ).ready(function() {
         else if (history[i] instanceof jsgl.elements.LineElement) s = s + '<a href="#" id="backToTheFuture" class="list-group-item" data="' + i + '">Created wire</a>';
       }
       $("#historyMenu").html(s);
+    }
+
+    function recursiveCheck(lastItem) {
+      for (var i = 0; i < lastItem.pins.length; i++) {
+        var pinOut1 = lastItem.pins[i].pinOut;
+        if (pinOut1) {
+          if (pinOut1.parentObject.name == "Arduino") {
+            if (pinOut1.pinType == "ground") {
+              info = "success";
+            } else {
+              info = "error";
+            }
+          } else {
+            recursiveCheck(pinOut1.parentObject);
+          }
+        }
+      }
     }
   });
 });
