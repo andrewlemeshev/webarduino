@@ -20,6 +20,9 @@ app.use(function (req, res, next) {
 // mount routes
 app.get('/', pages.home);
 app.get('/about', pages.about);
+app.get('/knowledge', pages.knowledge);
+app.get('/knowledge/arduino', pages.arduino);
+app.get('/knowledge/goal', pages.knowledge.goal);
 app.post('/getjson', function(req, res){
   var json;
   //console.log('body: ' + req.body);
