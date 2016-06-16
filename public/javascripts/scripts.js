@@ -7,14 +7,18 @@ $( document ).ready(function() {
   var history = [];
   var info = "";
   var idElement = 0;
+  var elementList = [];
+  var current = 0;
+  var voltage = 0;
+
 
   function Pins(pinName, pinType, pinX, pinY) {
     this.pinName = pinName;
     this.pinType = pinType;
     this.pinX = pinX;
     this.pinY = pinY;
-    this.pinOut = null;
-    this.pinIn = null;
+    this.pinOut = [];
+    this.pinIn = [];
     this.lineOut = [];
     this.lineIn = [];
     this.choosen = false;
@@ -29,7 +33,7 @@ $( document ).ready(function() {
     }
   }
 
-  function ArduinoElement(name, type, pinCount, pins, statement, statementXs, statementYs) {
+  function ArduinoElement(name, type, pinCount, pins, statement, statementXs, statementYs, maxV, minV, maxI, ohm) {
     this.name = name;
     this.type = type;
     this.pinCount = pinCount;
@@ -39,6 +43,10 @@ $( document ).ready(function() {
     this.statementYs = statementYs;
     this.that = this;
     this.id = null;
+    this.maxV = maxV;
+    this.minV = minV;
+    this.maxI = maxI;
+    this.ohm = ohm;
 
     this.isArduino = function() {
       return this.name == 'Arduino';
@@ -100,7 +108,7 @@ $( document ).ready(function() {
       //console.log("Pins: ");
       //console.log(pins);
       //}
-      arduinoElement.push(new ArduinoElement(arr[i].name, arr[i].type, arr[i].pinCount, pins, arr[i].statement, arr[i].statementXs, arr[i].statementYs));
+      arduinoElement.push(new ArduinoElement(arr[i].name, arr[i].type, arr[i].pinCount, pins, arr[i].statement, arr[i].statementXs, arr[i].statementYs, arr[i].maxV, arr[i].minV, arr[i].maxI, arr[i].ohm));
       var currentElement = arduinoElement.pop()
       for (var j = 0; j < currentElement.pins.length; j++) {
         currentElement.pins[j].setParentObject(currentElement);
@@ -157,10 +165,9 @@ $( document ).ready(function() {
       //console.log(this);
       var index = $(this).attr("data");
       for (var i = history.length-1; i >= index; i--) {
-        var elementToDelete = history.pop();
-        myPanel.removeElement(elementToDelete);
-        for (var j = 0; j < elementToDelete.parent.pins.length; j++) {
-          myPanel.removeElement(elementToDelete.parent.pins[j].reck);
+        var elementsToDeleteArray = history.pop();
+        for (var j = 0; j < elementsToDeleteArray.length; j++) {
+          myPanel.removeElement(elementsToDeleteArray[j]);
         }
       }
       historyUpdate(history);
@@ -168,17 +175,20 @@ $( document ).ready(function() {
 
     $("#startButton").on('click', function() {
       var warning = false;
-      if (arduinoElement.length < 2) $("#infoLabel").html("Create more elements");
+      if (arduinoElementActive.length < 2) $("#infoLabel").html("Create more elements");
       else {
-        for (var i = 0; i < arduinoElement.length; i++) {
+        for (var i = 0; i < arduinoElementActive.length; i++) {
           var hasOut = false;
           var hasIn = false;
           for (var j = 0; j < arduinoElementActive[i].pins.length; j++) {
-            if (arduinoElementActive[i].pins[j].pinOut) {
+            if (arduinoElementActive[i].pins[j].pinOut.length > 0) {
               hasOut = true;
               if (arduinoElementActive[i].name == "Arduino") {
+                current = arduinoElementActive[i].maxI;
+                voltage = arduinoElementActive[i].maxV;
+                info = "";
                 //console.log(arduinoElement[i].pins[j].pinName);
-                recursiveCheck(arduinoElementActive[i].pins[j].pinOut.parentObject);
+                var elemVoltage = recursiveCheck(arduinoElementActive[i], 0);
               }
             }
             if (arduinoElementActive[i].pins[j].pinIn) {
@@ -187,16 +197,24 @@ $( document ).ready(function() {
           }
           warning = hasOut & hasIn;
         }
-        console.log(info);
-        if (!warning) {
-          $("#infoLabel").attr("class", "label label-warning infoLabel");
-          $("#infoLabel").html("One of the elements is not wired");
-        } else if (info == "success") {
+        //console.log(info);
+        console.log("ElemVoltage = " + elemVoltage);
+        if (voltage > elemVoltage && info == "") {
           $("#infoLabel").attr("class", "label label-success infoLabel");
-          $("#infoLabel").html("Everything is OK");
-        } else if (info == "error") {
+          $("#infoLabel").html("Everything is OK! Current voltage: " + elemVoltage + "V.");
+        } else if (voltage < elemVoltage) {
           $("#infoLabel").attr("class", "label label-danger infoLabel");
-          $("#infoLabel").html("Electrical network should finish with Ground pin");
+          $("#infoLabel").html("Output voltage < network voltage! " + info);
+        } else if (info) {
+          $("#infoLabel").attr("class", "label label-danger infoLabel");
+          $("#infoLabel").html(info);
+        }
+        if (!warning) {
+          $("#infoLabel2").attr("class", "label label-warning infoLabel");
+          $("#infoLabel2").html("One of the elements is not wired");
+        } else {
+          $("#infoLabel2").attr("class", "infoLabel");
+          $("#infoLabel2").html("");
         }
       }
     })
@@ -228,22 +246,15 @@ $( document ).ready(function() {
       arduinoElementActive.push(cloneArduinoElement);
       arduinoElementActive[arduinoElementActive.length-1].id = idElement;
       idElement++;
-      //console.log(myImage.getWidth());
-      //arduinoElement[index].imageOnPanel = myImage;
-      //arduinoElement[index].imageOnPanel.parent = arduinoElement[index];
-      //myPanel.addElement(arduinoElement[index].imageOnPanel);
-      //history.push(arduinoElement[index].imageOnPanel);
       arduinoElementActive[arduinoElementActive.length-1].imageOnPanel = myImage;
       arduinoElementActive[arduinoElementActive.length-1].imageOnPanel.parent = arduinoElementActive[arduinoElementActive.length-1];
       myPanel.addElement(arduinoElementActive[arduinoElementActive.length-1].imageOnPanel);
-      history.push(arduinoElementActive[arduinoElementActive.length-1].imageOnPanel);
+      var array = [];
+      array.push(arduinoElementActive[arduinoElementActive.length-1].imageOnPanel);
       console.log(arduinoElementActive.length);
       console.log(arduinoElementActive);
-      historyUpdate(history);
       for (var i = 0; i < arduinoElementActive[arduinoElementActive.length-1].pinCount; i++) {
         var pinRect = myPanel.createRectangle();
-        //pinRect.setHorizontalAnchor(jsgl.HorizontalAnchor.CENTER);
-        //pinRect.setVerticalAnchor(jsgl.VerticalAnchor.MIDDLE);
         pinRect.setLocationXY(arduinoElementActive[arduinoElementActive.length-1].imageOnPanel.getX()+arduinoElementActive[arduinoElementActive.length-1].pins[i].pinX,
                               arduinoElementActive[arduinoElementActive.length-1].imageOnPanel.getY()+arduinoElementActive[arduinoElementActive.length-1].pins[i].pinY);
         pinRect.setSizeWH(10, 10);
@@ -252,12 +263,14 @@ $( document ).ready(function() {
         pinRect.getFill().setColor("rgb(255,0,0)");
         pinRect.getFill().setOpacity(0.0);
         pinRect.getStroke().setOpacity(0.0);
-        //pinRect.choosen = false;idElement
         arduinoElementActive[arduinoElementActive.length-1].pins[i].setParentObject(arduinoElementActive[arduinoElementActive.length-1]);
         arduinoElementActive[arduinoElementActive.length-1].pins[i].rect = pinRect;
         arduinoElementActive[arduinoElementActive.length-1].pins[i].rect.parentPin = arduinoElementActive[arduinoElementActive.length-1].pins[i];
         myPanel.addElement(arduinoElementActive[arduinoElementActive.length-1].pins[i].rect);
+        array.push(arduinoElementActive[arduinoElementActive.length-1].pins[i].rect);
       }
+      history.push(array);
+      historyUpdate(history);
       z++;
     });
     $("#btn-delete").on('click', function() {
@@ -400,8 +413,10 @@ $( document ).ready(function() {
                   console.log("Rectange.parent = Rectangle.parent");
                 } else {
                   console.log("Rectange.parent != Rectangle.parent");
-                  sourcePinFromPanel.parentPin.pinOut = nextSourcePinFromPanel.parentPin;
-                  nextSourcePinFromPanel.parentPin.pinIn = sourcePinFromPanel.parentPin;
+                  sourcePinFromPanel.parentPin.pinOut.push(nextSourcePinFromPanel.parentPin);
+                  nextSourcePinFromPanel.parentPin.pinIn.push(sourcePinFromPanel.parentPin);
+                  console.log(sourcePinFromPanel.parentPin.pinOut);
+                  console.log(nextSourcePinFromPanel.parentPin.pinIn);
                   currentLine = sourcePinFromPanel.parentPin.lineOut.pop();
                   if (sourcePinFromPanel.parentPin.parentObject.isArduino())
                     currentLine.getStroke().setColor("rgb(0,127,0)");//sourcePinFromPanel.parentPin.lineOut.getStroke().setColor("rgb(0,127,0)");
@@ -412,6 +427,7 @@ $( document ).ready(function() {
                   sourcePinFromPanel.getFill().setOpacity(0.0);
                   sourcePinFromPanel.parentPin.lineOut.push(currentLine);
                   nextSourcePinFromPanel.parentPin.lineIn.push(currentLine); //= sourcePinFromPanel.parentPin.lineOut;
+
                   history.push(currentLine);
                   historyUpdate(history);
                   sourcePinFromPanel = null;
@@ -528,26 +544,31 @@ $( document ).ready(function() {
 
     function historyUpdate(history) {
       var s = '';
+      console.log(history.length);
       for (var i = history.length-1; i >=0 ; i--) {
-        if (history[i] instanceof jsgl.elements.ImageElement) s = s + '<a href="#" id="backToTheFuture" class="list-group-item" data="' + i + '">Created ' + history[i].parent.name + '</a>';
+        if (history[i][0] instanceof jsgl.elements.ImageElement) s = s + '<a href="#" id="backToTheFuture" class="list-group-item" data="' + i + '">Created ' + history[i][0].parent.name + '</a>';
         else if (history[i] instanceof jsgl.elements.LineElement) s = s + '<a href="#" id="backToTheFuture" class="list-group-item" data="' + i + '">Created wire</a>';
       }
       $("#historyMenu").html(s);
     }
 
-    function recursiveCheck(lastItem) {
+    function recursiveCheck(lastItem, elemVoltage) {
       for (var i = 0; i < lastItem.pins.length; i++) {
         var pinOut1 = lastItem.pins[i].pinOut;
-        if (pinOut1) {
-          if (pinOut1.parentObject.name == "Arduino") {
-            if (pinOut1.pinType == "ground") {
-              info = "success";
+        if (pinOut1.length > 0) {
+          //for (var i = 0; i < pinOut1.length; i++) {
+            if (pinOut1[0].parentObject.name == "Arduino") {
+              //console.log(pinOut1[0].type);
+              if (pinOut1[0].pinType != "ground") {
+                info = "Electrical network should finish with Ground pin!";
+              }
+              return elemVoltage;
             } else {
-              info = "error";
+              if (pinOut1[0].parentObject.maxV == undefined) elemVoltage += pinOut1[0].parentObject.ohm * current;
+              else elemVoltage += pinOut1[0].parentObject.maxV;
+              return recursiveCheck(pinOut1[0].parentObject, elemVoltage);
             }
-          } else {
-            recursiveCheck(pinOut1.parentObject);
-          }
+          //}
         }
       }
     }

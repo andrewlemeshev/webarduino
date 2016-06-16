@@ -110,7 +110,9 @@
     ],
     "statementYs": [
       214
-    ]
+    ],
+    "maxV": 20,
+    "maxI": 0.025
   },
   "led": {
     "name": "Led",
@@ -140,7 +142,9 @@
     "statementYs": [
       125,
       150
-    ]
+    ],
+    "maxV": 2.3,
+    "minV": 0
   },
   "button": {
     "name": "Button",
@@ -175,6 +179,35 @@
     "statementYs": [
       66,
       67
-    ]
+    ],
+    "maxV": 0,
+    "minV": 0
+  },
+  "resistor": {
+    "name": "Resistor",
+    "type": "220 Om",
+    "pinCount": 2,
+    "pinXs": [
+      0,
+      155
+    ],
+    "pinYs": [
+      14,
+      13
+    ],
+    "pinNamesAndTypes": {
+      "1": "pin",
+      "2": "pin"
+    },
+    "statement": {
+      "default": "resistor.png"
+    },
+    "statementXs": [
+      165
+    ],
+    "statementYs": [
+      38
+    ],
+    "ohm": 220
   }
 }
